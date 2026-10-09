@@ -12,12 +12,15 @@ Live at `https://rishav30194.github.io/life-admin/` once deployed.
   it's due. On that day a copy appears at the top of Critical and stays until you tick it off.
   A month the app wasn't opened is still added, so a missed bill can't disappear. A bill set
   for the 31st shows on the last day of shorter months.
+- **Bills can't be deleted from the list,** only ticked off. Swiping left does nothing on a bill,
+  and clearing Critical leaves bills in place. In **Monthly bills**, tap a name to rename it
+  (the copy in Critical follows), change its day, or **Stop** it to end future months.
 - **Tasks:** add with **+**, choosing a list, an optional due date, and optionally a checklist.
   A due date is shown on the task but never moves it.
 - **Moving:** hold a task for about half a second, then drag it onto another list. Monthly bills
   stay in Critical.
 - **Finishing and deleting:** tick a task or swipe it right to finish it. It stays struck through
-  until the end of the day, then disappears. Swipe left to delete, with **Undo**.
+  until the end of the day, then disappears. Swipe left to delete, with **Undo**. Bills don't swipe left.
 - **Editing:** tap a task's name to rename it. The arrow on the right opens its due date and
   checklist. Clear an item's text to remove it.
 - **Menu:** monthly bills, collapse or expand all lists, clear a list, and backups.

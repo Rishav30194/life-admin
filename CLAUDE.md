@@ -21,6 +21,10 @@ Each of these was asked for by the user. Changing one needs their approval.
 
 - **Monthly bills always sit in Critical** and can't be dragged. Everything else can be moved to
   any list.
+- **A monthly bill's copy is never deleted by hand.** It can only be ticked off, after which it
+  clears the next day like any task. No left swipe, and **Clear a list** skips it. **Stop** in
+  **Monthly bills** ends future months only.
+- **Renaming a bill renames its copies** already in the lists.
 - **A due date never moves a task.** It's information only.
 - **Missed bill months are caught up**, oldest first. A copy the user deleted is never recreated:
   `lastGenerated` has already moved past it.

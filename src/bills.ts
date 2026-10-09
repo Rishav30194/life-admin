@@ -58,6 +58,20 @@ export function generateBills(data: AppData, now: Date): AppData {
   return { tasks: [...data.tasks, ...added], bills };
 }
 
+/**
+ * Renames a bill and every copy of it already in the lists, so the list never shows
+ * the old name for a bill that's still owed. An empty name is ignored.
+ */
+export function renameBill(data: AppData, id: string, name: string): AppData {
+  const v = name.trim();
+  const bill = data.bills.find((b) => b.id === id);
+  if (!v || !bill || bill.name === v) return data;
+  return {
+    bills: data.bills.map((b) => (b.id === id ? { ...b, name: v } : b)),
+    tasks: data.tasks.map((t) => (t.billId === id ? { ...t, title: v } : t)),
+  };
+}
+
 /** Finished tasks stay struck through for the day they were done, then go. */
 export function clearFinished(data: AppData, today: ISODate): AppData {
   const tasks = data.tasks.filter((t) => !(t.done && t.doneAt !== null && t.doneAt < today));

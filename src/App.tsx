@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { generateBills, maintain } from './bills';
+import { generateBills, maintain, renameBill } from './bills';
 import { AddSheet } from './components/AddSheet';
 import { BillsSheet } from './components/BillsSheet';
 import { MenuSheet } from './components/MenuSheet';
@@ -10,7 +10,7 @@ import { monthOf, toISODate } from './dates';
 import {
   StorageWriteError, exportBackup, load, loadCollapsed, requestPersistence, save, saveCollapsed,
 } from './storage';
-import { createTask, groupTasks, moveTo, type NewTask } from './tasks';
+import { canDelete, createTask, groupTasks, moveTo, type NewTask } from './tasks';
 import { LABEL, PRIORITIES, type AppData, type Bill, type Priority, type Task } from './types';
 
 type SheetName = 'add' | 'menu' | 'bills';
@@ -100,6 +100,7 @@ export function App() {
     setData((d) => ({ ...d, tasks: d.tasks.map((t) => (t.id === id ? fn(t) : t)) }));
 
   const deleteTask = (t: Task) => {
+    if (!canDelete(t)) return;
     removeTasks(new Set([t.id]));
     showToast(`Deleted "${t.title}"`, () => restore([t]));
   };
@@ -109,8 +110,9 @@ export function App() {
     showToast(`Moved to ${LABEL[to]}`);
   };
 
+  // Monthly bills stay: they can only be ticked off.
   const clearList = (p: Priority) => {
-    const gone = groups[p];
+    const gone = groups[p].filter(canDelete);
     removeTasks(new Set(gone.map((t) => t.id)));
     setSheet(null);
     showToast(`Cleared ${gone.length} ${gone.length === 1 ? 'task' : 'tasks'} from ${LABEL[p]}`, () => restore(gone));
@@ -130,6 +132,8 @@ export function App() {
     };
     setData((d) => generateBills({ ...d, bills: [...d.bills, bill] }, now));
   };
+
+  const changeBillName = (id: string, name: string) => setData((d) => renameBill(d, id, name));
 
   const changeBillDay = (id: string, day: number) =>
     setData((d) => generateBills({ ...d, bills: d.bills.map((b) => (b.id === id ? { ...b, day } : b)) }, new Date()));
@@ -265,7 +269,7 @@ export function App() {
       {sheet === 'menu' && (
         <MenuSheet
           billCount={data.bills.length}
-          counts={Object.fromEntries(PRIORITIES.map((p) => [p, groups[p].length])) as Record<Priority, number>}
+          counts={Object.fromEntries(PRIORITIES.map((p) => [p, groups[p].filter(canDelete).length])) as Record<Priority, number>}
           allCollapsed={allCollapsed}
           onBills={() => setSheet('bills')}
           onToggleCollapse={() => {
@@ -282,6 +286,7 @@ export function App() {
         <BillsSheet
           bills={data.bills}
           onAdd={addBill}
+          onRename={changeBillName}
           onChangeDay={changeBillDay}
           onStop={stopBill}
           onClose={() => setSheet(null)}

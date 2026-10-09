@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { flushSync } from 'react-dom';
 import { dueText, monthLabel, ordinal } from '../dates';
 import { attachGestures, type GestureHandlers } from '../gestures';
-import { addItem, priorityOf, rename, setDue, setItemText, toggleDone, toggleItem } from '../tasks';
+import { addItem, canDelete, priorityOf, rename, setDue, setItemText, toggleDone, toggleItem } from '../tasks';
 import type { ISODate, Priority, Task } from '../types';
 
 interface Props {
@@ -28,6 +28,7 @@ export function TaskRow({ task: t, today, billDay, open, onToggleOpen, onUpdate,
   const handlers = useRef<GestureHandlers | null>(null);
   handlers.current = {
     canDrag: !t.billId,
+    canDelete: canDelete(t),
     from: priorityOf(t),
     onSwipeRight: () => onUpdate((x) => toggleDone(x, today)),
     onSwipeLeft: onDelete,

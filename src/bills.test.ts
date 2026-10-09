@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { billTaskId, clearFinished, generateBills, maintain, monthsDue } from './bills';
+import { billTaskId, clearFinished, generateBills, maintain, monthsDue, renameBill } from './bills';
 import { at, bill, task } from './testing';
 
 describe('monthsDue', () => {
@@ -69,5 +69,26 @@ describe('maintain', () => {
   it('is idempotent', () => {
     const once = maintain({ tasks: [], bills: [bill()] }, at('2026-10-08'));
     expect(maintain(once, at('2026-10-08'))).toBe(once);
+  });
+});
+
+describe('renameBill', () => {
+  const copy = (m: string) => task({ id: billTaskId('rent', m), title: 'Pay rent', billId: 'rent', month: m, priority: 'critical' });
+  const data = { tasks: [copy('2026-09'), copy('2026-10'), task({ id: 'other', title: 'Pay rent' })], bills: [bill()] };
+
+  it('renames the bill and every copy of it, and nothing else', () => {
+    const out = renameBill(data, 'rent', '  Rent, flat 4 ');
+    expect(out.bills[0]?.name).toBe('Rent, flat 4');
+    expect(out.tasks.map((t) => t.title)).toEqual(['Rent, flat 4', 'Rent, flat 4', 'Pay rent']);
+  });
+
+  it('names next month\'s copy with the new name', () => {
+    const out = generateBills(renameBill(data, 'rent', 'Rent'), at('2026-11-02'));
+    expect(out.tasks.find((t) => t.month === '2026-11')?.title).toBe('Rent');
+  });
+
+  it('ignores an empty or unchanged name', () => {
+    expect(renameBill(data, 'rent', '   ')).toBe(data);
+    expect(renameBill(data, 'rent', 'Pay rent')).toBe(data);
   });
 });

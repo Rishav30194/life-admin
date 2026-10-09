@@ -9,6 +9,8 @@ import type { Priority } from './types';
 export interface GestureHandlers {
   /** Monthly bills always stay in Critical, so they can't be picked up. */
   canDrag: boolean;
+  /** Monthly bills can only be ticked off, so they don't swipe left. */
+  canDelete: boolean;
   from: Priority;
   onSwipeRight: () => void;
   onSwipeLeft: () => void;
@@ -148,7 +150,7 @@ export function attachGestures(wrap: HTMLElement, row: HTMLElement, handlers: ()
         return;
       } else return;
     }
-    dx = mx;
+    dx = handlers().canDelete ? mx : Math.max(mx, 0);
     wrap.classList.toggle('to-done', dx > 0);
     wrap.classList.toggle('to-del', dx < 0);
     wrap.classList.toggle('armed', Math.abs(dx) > threshold());
