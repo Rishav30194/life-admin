@@ -40,9 +40,11 @@ function readTask(v: unknown): Task | null {
     list = items.map(readItem).filter((x): x is ChecklistItem => x !== null);
     if (list.length !== items.length) return null;
   }
+  // Saved before tasks moved up after a month: the clock starts from when the task was added.
+  const listSince = typeof v['listSince'] === 'number' ? v['listSince'] : createdAt;
   return {
     id, title, priority: priority as Priority, due, items: list?.length ? list : null,
-    done, doneAt, createdAt, billId, month,
+    done, doneAt, createdAt, listSince, billId, month,
   };
 }
 

@@ -17,6 +17,13 @@ describe('storage', () => {
     expect(load()).toEqual(data);
   });
 
+  it('starts the month from when a task was added for data saved before the move-up rule', () => {
+    const old = { ...task({ createdAt: 1234 }) } as Record<string, unknown>;
+    delete old['listSince'];
+    localStorage.setItem('life-admin:data', JSON.stringify({ tasks: [old], bills: [] }));
+    expect(load().tasks[0]?.listSince).toBe(1234);
+  });
+
   it('starts empty on first open', () => {
     expect(load()).toEqual(EMPTY);
   });

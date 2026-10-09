@@ -31,6 +31,8 @@ export interface Task {
   /** The day it was ticked off. It stays visible, struck through, until that day ends. */
   doneAt: ISODate | null;
   createdAt: number;
+  /** When the task entered its current list. After 30 days there, it moves up one list. */
+  listSince: number;
   /** Set on the copy a monthly bill puts into Critical. */
   billId: string | null;
   month: YearMonth | null;

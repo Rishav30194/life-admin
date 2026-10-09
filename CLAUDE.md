@@ -26,6 +26,11 @@ Each of these was asked for by the user. Changing one needs their approval.
   **Monthly bills** ends future months only.
 - **Renaming a bill renames its copies** already in the lists.
 - **A due date never moves a task.** It's information only.
+- **A task left 30 days in one list moves up one list** (Remaining → Medium → High → Critical),
+  catching up missed months one step each and stopping at Critical. Only a change of list
+  restarts the clock (`listSince`); renaming or ticking checklist items doesn't. Dragging a task
+  down restarts it, which is how the user overrules a move. Bills and finished tasks never move.
+  Opening the app says how many moved up.
 - **Missed bill months are caught up**, oldest first. A copy the user deleted is never recreated:
   `lastGenerated` has already moved past it.
 - **Finished tasks stay visible, struck through, for the rest of the day**, then are deleted the
