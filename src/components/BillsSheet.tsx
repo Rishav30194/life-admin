@@ -6,6 +6,7 @@ import { Sheet } from './Sheet';
 interface Props {
   bills: Bill[];
   onAdd: (name: string, day: number) => void;
+  onRename: (id: string, name: string) => void;
   onChangeDay: (id: string, day: number) => void;
   onStop: (id: string) => void;
   onClose: () => void;
@@ -21,7 +22,7 @@ function DaySelect({ value, label, onChange }: { value: number; label: string; o
   );
 }
 
-export function BillsSheet({ bills, onAdd, onChangeDay, onStop, onClose }: Props) {
+export function BillsSheet({ bills, onAdd, onRename, onChangeDay, onStop, onClose }: Props) {
   const [armed, setArmed] = useState<string | null>(null);
   const [day, setDay] = useState(1);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -29,12 +30,30 @@ export function BillsSheet({ bills, onAdd, onChangeDay, onStop, onClose }: Props
 
   return (
     <Sheet title="Monthly bills" onClose={onClose} right={<button type="button" className="head-action" onClick={onClose}>Done</button>}>
-      <p className="hint">Each bill appears at the top of Critical on its day every month and stays there until you mark it paid.</p>
+      <p className="hint">Each bill appears at the top of Critical on its day every month and stays there until you tick it off. Tap a name to rename it.</p>
       <ul className="bill-list">
         {sorted.length === 0 && <li className="hint">No bills yet. Add one for each credit card, and rent.</li>}
         {sorted.map((b) => (
           <li key={b.id}>
-            <span className="bill-name">{b.name}</span>
+            <input
+              // Keyed by name so the field resets if the name changes elsewhere, such as an import.
+              key={b.name}
+              className="bill-name"
+              defaultValue={b.name}
+              aria-label={`Rename ${b.name}`}
+              enterKeyHint="done"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+              }}
+              onBlur={(e) => {
+                // An empty name is ignored, so put the old one back in the field.
+                if (!e.currentTarget.value.trim()) e.currentTarget.value = b.name;
+                else onRename(b.id, e.currentTarget.value);
+              }}
+            />
             <DaySelect value={b.day} label={`Day of the month for ${b.name}`} onChange={(d) => onChangeDay(b.id, d)} />
             <button
               type="button"

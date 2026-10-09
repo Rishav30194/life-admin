@@ -6,6 +6,14 @@ export function priorityOf(t: Task): Priority {
   return t.billId ? 'critical' : t.priority;
 }
 
+/**
+ * A monthly bill's copy is never deleted by hand, only ticked off, so a bill can't be
+ * dismissed without being paid. It clears itself the day after it's ticked, like any task.
+ */
+export function canDelete(t: Task): boolean {
+  return !t.billId;
+}
+
 /** Open before done, bills first, then by due date, then oldest first. */
 export function compareTasks(a: Task, b: Task): number {
   if (a.done !== b.done) return a.done ? 1 : -1;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  addItem, createTask, groupTasks, moveTo, priorityOf, rename, setDue, setItemText, toggleDone, toggleItem,
+  addItem, canDelete, createTask, groupTasks, moveTo, priorityOf, rename, setDue, setItemText, toggleDone, toggleItem,
 } from './tasks';
 import { task } from './testing';
 
@@ -15,6 +15,11 @@ describe('placement', () => {
 
   it('never moves a task because of its due date', () => {
     expect(priorityOf(setDue(task({ priority: 'remaining' }), TODAY))).toBe('remaining');
+  });
+
+  it('never lets a monthly bill be deleted, only ticked off', () => {
+    expect(canDelete(task({ billId: 'rent' }))).toBe(false);
+    expect(canDelete(task())).toBe(true);
   });
 
   it('moves any other task to any list', () => {

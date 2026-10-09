@@ -61,12 +61,12 @@ export function MenuSheet(props: Props) {
               onClick={() => (armed ? onClear(p) : setArmedClear(p))}
             >
               <span>{armed ? `Tap again to delete ${plural(n, 'task')}` : LABEL[p]}</span>
-              <span className="sub">{n ? plural(n, 'task') : 'Empty'}</span>
+              <span className="sub">{n ? plural(n, 'task') : 'Nothing to clear'}</span>
             </button>
           );
         })}
       </div>
-      <p className="hint">Clearing deletes every task in that list. You can undo it for a few seconds afterwards.</p>
+      <p className="hint">Clearing deletes every task in that list except monthly bills. You can undo it for a few seconds afterwards.</p>
 
       <div className="label">Backup</div>
       <div className="menu-group">
