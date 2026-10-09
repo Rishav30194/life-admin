@@ -24,6 +24,8 @@ Live at `https://rishav30194.github.io/life-admin/` once deployed.
 - **Editing:** tap a task's name to rename it. The arrow on the right opens its due date and
   checklist. Clear an item's text to remove it.
 - **Menu:** monthly bills, collapse or expand all lists, clear a list, and backups.
+- **Panels** (**+**, **Menu**, **Monthly bills**) close with a swipe down, a tap on the dimmed
+  area, or **Cancel** or **Done**.
 
 ## Your data
 
