@@ -11,6 +11,7 @@ export function task(over: Partial<Task> = {}): Task {
     done: false,
     doneAt: null,
     createdAt: 1,
+    listSince: 1,
     billId: null,
     month: null,
     ...over,

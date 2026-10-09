@@ -49,6 +49,7 @@ export function createTask(input: NewTask, id: string, now: number): Task {
     done: false,
     doneAt: null,
     createdAt: now,
+    listSince: now,
     billId: null,
     month: null,
   };
@@ -64,9 +65,42 @@ export function rename(t: Task, title: string): Task {
   return v && v !== t.title ? { ...t, title: v } : t;
 }
 
-/** A bill keeps to Critical whatever it's dropped on. */
-export function moveTo(t: Task, p: Priority): Task {
-  return t.billId || t.priority === p ? t : { ...t, priority: p };
+/** A bill keeps to Critical whatever it's dropped on. Moving restarts the month in the new list. */
+export function moveTo(t: Task, p: Priority, now: number): Task {
+  return t.billId || t.priority === p ? t : { ...t, priority: p, listSince: now };
+}
+
+export const MOVE_UP_AFTER_MS = 30 * 86_400_000;
+
+const UP: Record<Priority, Priority> = { remaining: 'medium', medium: 'high', high: 'critical', critical: 'critical' };
+
+/**
+ * A task left in the same list for 30 days moves up one list, so nothing sits forgotten
+ * at the bottom. Months the app wasn't opened are caught up one step each, and each step
+ * restarts the clock from when it was due, not from today, so the monthly rhythm holds.
+ *
+ * Only a change of list restarts the clock. Renaming or ticking checklist items doesn't,
+ * or touching a task would quietly hold it back. Dragging it back down does restart it,
+ * which is how the user overrules a move. Bills and finished tasks are left alone.
+ */
+export function moveUpIfStale(t: Task, now: number): Task {
+  if (t.billId || t.done) return t;
+  let { priority, listSince } = t;
+  while (priority !== 'critical' && now - listSince >= MOVE_UP_AFTER_MS) {
+    priority = UP[priority];
+    listSince += MOVE_UP_AFTER_MS;
+  }
+  return priority === t.priority ? t : { ...t, priority, listSince };
+}
+
+/** How many tasks are in a higher list in `after` than in `before`. */
+export function countMovedUp(before: readonly Task[], after: readonly Task[]): number {
+  const rank = (p: Priority) => PRIORITIES.length - PRIORITIES.indexOf(p);
+  const was = new Map(before.map((t) => [t.id, t.priority]));
+  return after.filter((t) => {
+    const p = was.get(t.id);
+    return p !== undefined && rank(t.priority) > rank(p);
+  }).length;
 }
 
 export function setDue(t: Task, due: ISODate | null): Task {

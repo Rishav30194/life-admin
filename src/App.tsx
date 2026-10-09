@@ -10,10 +10,12 @@ import { monthOf, toISODate } from './dates';
 import {
   StorageWriteError, exportBackup, load, loadCollapsed, requestPersistence, save, saveCollapsed,
 } from './storage';
-import { canDelete, createTask, groupTasks, moveTo, type NewTask } from './tasks';
+import { canDelete, countMovedUp, createTask, groupTasks, moveTo, type NewTask } from './tasks';
 import { LABEL, PRIORITIES, type AppData, type Bill, type Priority, type Task } from './types';
 
 type SheetName = 'add' | 'menu' | 'bills';
+
+const movedUpText = (n: number) => `${n} ${n === 1 ? 'task' : 'tasks'} moved up after a month`;
 
 interface Toast {
   id: number;
@@ -32,8 +34,15 @@ export function App() {
   } = useRegisterSW();
 
   const [today, setToday] = useState(() => toISODate(new Date()));
-  // Bills and the day's cleanup run before the first paint, so the list never jumps.
-  const [data, setData] = useState<AppData>(() => maintain(load(), new Date()));
+  // New bills, the day's cleanup, and month-old tasks moving up all run before the first
+  // paint, so the list never jumps. How many moved up is kept to say so once it's on screen.
+  const [boot] = useState(() => {
+    const before = load();
+    const after = maintain(before, new Date());
+    return { data: after, movedUp: countMovedUp(before.tasks, after.tasks) };
+  });
+  const [data, setData] = useState<AppData>(boot.data);
+  const dataRef = useRef(data);
   const [collapsed, setCollapsed] = useState<Set<Priority>>(() => new Set(loadCollapsed()));
   const [open, setOpen] = useState<Set<string>>(() => new Set());
   const [sheet, setSheet] = useState<SheetName | null>(null);
@@ -59,6 +68,14 @@ export function App() {
     }
   }, [data, showToast]);
 
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
+  useEffect(() => {
+    if (boot.movedUp) showToast(movedUpText(boot.movedUp));
+  }, [boot, showToast]);
+
   useEffect(() => saveCollapsed(collapsed), [collapsed]);
   useEffect(() => requestPersistence(), []);
 
@@ -68,7 +85,11 @@ export function App() {
     const check = () => {
       const now = new Date();
       setToday(toISODate(now));
+      // Counted outside the state update, which must stay free of side effects.
+      const before = dataRef.current;
+      const moved = countMovedUp(before.tasks, maintain(before, now).tasks);
       setData((d) => maintain(d, now));
+      if (moved) showToast(movedUpText(moved));
     };
     const onVisible = () => {
       if (!document.hidden) check();
@@ -79,7 +100,7 @@ export function App() {
       document.removeEventListener('visibilitychange', onVisible);
       clearInterval(timer);
     };
-  }, []);
+  }, [showToast]);
 
   const groups = useMemo(() => groupTasks(data.tasks), [data.tasks]);
   const billDays = useMemo(() => new Map(data.bills.map((b) => [b.id, b.day])), [data.bills]);
@@ -106,7 +127,7 @@ export function App() {
   };
 
   const moveTask = (id: string, to: Priority) => {
-    updateTask(id, (t) => moveTo(t, to));
+    updateTask(id, (t) => moveTo(t, to, Date.now()));
     showToast(`Moved to ${LABEL[to]}`);
   };
 

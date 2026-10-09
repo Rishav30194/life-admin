@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { billTaskId, clearFinished, generateBills, maintain, monthsDue, renameBill } from './bills';
+import { MOVE_UP_AFTER_MS } from './tasks';
 import { at, bill, task } from './testing';
 
 describe('monthsDue', () => {
@@ -66,6 +67,14 @@ describe('clearFinished', () => {
 });
 
 describe('maintain', () => {
+  it('moves up tasks that have sat in one list for a month', () => {
+    const now = at('2026-11-10');
+    const stale = task({ id: 'old', priority: 'remaining', listSince: now.getTime() - MOVE_UP_AFTER_MS });
+    const fresh = task({ id: 'new', priority: 'remaining', listSince: now.getTime() });
+    const out = maintain({ tasks: [stale, fresh], bills: [] }, now);
+    expect(out.tasks.map((t) => t.priority)).toEqual(['medium', 'remaining']);
+  });
+
   it('is idempotent', () => {
     const once = maintain({ tasks: [], bills: [bill()] }, at('2026-10-08'));
     expect(maintain(once, at('2026-10-08'))).toBe(once);

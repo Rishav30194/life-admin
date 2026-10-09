@@ -1,4 +1,5 @@
 import { daysInMonth, monthOf, nextMonth, toISODate } from './dates';
+import { moveUpIfStale } from './tasks';
 import type { AppData, Bill, ISODate, Task, YearMonth } from './types';
 
 /** The day a bill appears in month `m`. A bill set for the 31st shows on the last day of shorter months. */
@@ -35,6 +36,7 @@ export function billTask(bill: Bill, m: YearMonth, createdAt: number): Task {
     done: false,
     doneAt: null,
     createdAt,
+    listSince: createdAt,
     billId: bill.id,
     month: m,
   };
@@ -78,7 +80,18 @@ export function clearFinished(data: AppData, today: ISODate): AppData {
   return tasks.length === data.tasks.length ? data : { ...data, tasks };
 }
 
+/** Moves up every task that has sat in one list for a month. */
+export function moveUpStale(data: AppData, now: Date): AppData {
+  let changed = false;
+  const tasks = data.tasks.map((t) => {
+    const next = moveUpIfStale(t, now.getTime());
+    if (next !== t) changed = true;
+    return next;
+  });
+  return changed ? { ...data, tasks } : data;
+}
+
 /** What opening the app (or a new day starting while it's open) does. Idempotent. */
 export function maintain(data: AppData, now: Date): AppData {
-  return clearFinished(generateBills(data, now), toISODate(now));
+  return moveUpStale(clearFinished(generateBills(data, now), toISODate(now)), now);
 }

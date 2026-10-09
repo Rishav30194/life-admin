@@ -17,6 +17,10 @@ Live at `https://rishav30194.github.io/life-admin/` once deployed.
   (the copy in Critical follows), change its day, or **Stop** it to end future months.
 - **Tasks:** add with **+**, choosing a list, an optional due date, and optionally a checklist.
   A due date is shown on the task but never moves it.
+- **Moving up over time:** a task left in the same list for 30 days moves up one list, from
+  Remaining to Medium to High to Critical. Dragging it to another list, including back down,
+  starts its 30 days again. Bills and finished tasks don't move. The app tells you when it
+  moves something.
 - **Moving:** hold a task for about half a second, then drag it onto another list. Monthly bills
   stay in Critical.
 - **Finishing and deleting:** tick a task or swipe it right to finish it. It stays struck through

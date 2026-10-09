@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  addItem, canDelete, createTask, groupTasks, moveTo, priorityOf, rename, setDue, setItemText, toggleDone, toggleItem,
+  MOVE_UP_AFTER_MS, addItem, canDelete, countMovedUp, createTask, groupTasks, moveTo, moveUpIfStale, priorityOf, rename,
+  setDue, setItemText, toggleDone, toggleItem,
 } from './tasks';
 import { task } from './testing';
 
@@ -10,7 +11,7 @@ const list = (...done: boolean[]) => done.map((d, i) => ({ text: `item ${i}`, do
 describe('placement', () => {
   it('keeps monthly bills in Critical', () => {
     expect(priorityOf(task({ billId: 'rent', priority: 'medium' }))).toBe('critical');
-    expect(moveTo(task({ billId: 'rent', priority: 'critical' }), 'medium').priority).toBe('critical');
+    expect(moveTo(task({ billId: 'rent', priority: 'critical' }), 'medium', 5).priority).toBe('critical');
   });
 
   it('never moves a task because of its due date', () => {
@@ -23,7 +24,7 @@ describe('placement', () => {
   });
 
   it('moves any other task to any list', () => {
-    expect(moveTo(task({ priority: 'critical' }), 'remaining').priority).toBe('remaining');
+    expect(moveTo(task({ priority: 'critical' }), 'remaining', 5).priority).toBe('remaining');
   });
 });
 
@@ -90,5 +91,56 @@ describe('checklists', () => {
 
   it('turns back into a single task when the last item is removed', () => {
     expect(setItemText(task({ items: list(false) }), 0, '', TODAY).items).toBeNull();
+  });
+});
+
+describe('moving up after a month', () => {
+  const DAY = 86_400_000;
+  const MONTH = MOVE_UP_AFTER_MS;
+
+  it('waits a full 30 days in the same list', () => {
+    const t = task({ priority: 'remaining', listSince: 0 });
+    expect(moveUpIfStale(t, 29 * DAY)).toBe(t);
+    expect(moveUpIfStale(t, MONTH)).toMatchObject({ priority: 'medium', listSince: MONTH });
+  });
+
+  it('catches up one list per missed month and stops at Critical', () => {
+    const t = task({ priority: 'remaining', listSince: 0 });
+    expect(moveUpIfStale(t, 2 * MONTH + DAY)).toMatchObject({ priority: 'high', listSince: 2 * MONTH });
+    expect(moveUpIfStale(t, 10 * MONTH).priority).toBe('critical');
+  });
+
+  it('keeps the monthly rhythm from when each step was due, not from today', () => {
+    const moved = moveUpIfStale(task({ priority: 'medium', listSince: 0 }), MONTH + 10 * DAY);
+    expect(moveUpIfStale(moved, 2 * MONTH).priority).toBe('critical');
+  });
+
+  it('leaves monthly bills, finished tasks, and Critical tasks alone', () => {
+    for (const t of [
+      task({ billId: 'rent', priority: 'critical', listSince: 0 }),
+      task({ done: true, doneAt: '2026-10-08', priority: 'medium', listSince: 0 }),
+      task({ priority: 'critical', listSince: 0 }),
+    ]) expect(moveUpIfStale(t, 5 * MONTH)).toBe(t);
+  });
+
+  it('restarts the clock when the task is moved, including back down', () => {
+    const moved = moveTo(task({ priority: 'high', listSince: 0 }), 'remaining', 20 * DAY);
+    expect(moved.listSince).toBe(20 * DAY);
+    expect(moveUpIfStale(moved, MONTH + DAY)).toBe(moved);
+  });
+
+  it('does not restart the clock on other edits', () => {
+    const renamed = rename(task({ priority: 'remaining', listSince: 0 }), 'Oil change');
+    expect(moveUpIfStale(renamed, MONTH).priority).toBe('medium');
+  });
+
+  it('starts a new task\'s clock when it is added', () => {
+    expect(createTask({ title: 'x', priority: 'medium', due: null, items: null }, 'id', 42).listSince).toBe(42);
+  });
+
+  it('counts only tasks that went up', () => {
+    const before = [task({ id: 'a', priority: 'remaining' }), task({ id: 'b', priority: 'high' }), task({ id: 'c' })];
+    const after = [task({ id: 'a', priority: 'medium' }), task({ id: 'b', priority: 'medium' }), task({ id: 'new', priority: 'critical' })];
+    expect(countMovedUp(before, after)).toBe(1);
   });
 });
