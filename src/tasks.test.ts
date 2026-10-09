@@ -1,0 +1,89 @@
+import { describe, expect, it } from 'vitest';
+import {
+  addItem, createTask, groupTasks, moveTo, priorityOf, rename, setDue, setItemText, toggleDone, toggleItem,
+} from './tasks';
+import { task } from './testing';
+
+const TODAY = '2026-10-08';
+const list = (...done: boolean[]) => done.map((d, i) => ({ text: `item ${i}`, done: d }));
+
+describe('placement', () => {
+  it('keeps monthly bills in Critical', () => {
+    expect(priorityOf(task({ billId: 'rent', priority: 'medium' }))).toBe('critical');
+    expect(moveTo(task({ billId: 'rent', priority: 'critical' }), 'medium').priority).toBe('critical');
+  });
+
+  it('never moves a task because of its due date', () => {
+    expect(priorityOf(setDue(task({ priority: 'remaining' }), TODAY))).toBe('remaining');
+  });
+
+  it('moves any other task to any list', () => {
+    expect(moveTo(task({ priority: 'critical' }), 'remaining').priority).toBe('remaining');
+  });
+});
+
+describe('groupTasks', () => {
+  it('orders open before done, bills first, then by due date, then oldest first', () => {
+    const tasks = [
+      task({ id: 'done', priority: 'critical', done: true, doneAt: TODAY }),
+      task({ id: 'plain-old', priority: 'critical', createdAt: 1 }),
+      task({ id: 'plain-new', priority: 'critical', createdAt: 2 }),
+      task({ id: 'due-later', priority: 'critical', due: '2026-12-01' }),
+      task({ id: 'due-soon', priority: 'critical', due: '2026-10-20' }),
+      task({ id: 'bill-oct', billId: 'b', month: '2026-10', priority: 'critical' }),
+      task({ id: 'bill-sep', billId: 'b', month: '2026-09', priority: 'critical' }),
+    ];
+    expect(groupTasks(tasks).critical.map((t) => t.id)).toEqual([
+      'bill-sep', 'bill-oct', 'due-soon', 'due-later', 'plain-old', 'plain-new', 'done',
+    ]);
+  });
+});
+
+describe('createTask', () => {
+  it('trims the name and drops an empty checklist', () => {
+    const t = createTask({ title: '  Car wash ', priority: 'medium', due: null, items: [] }, 'id', 5);
+    expect(t).toMatchObject({ title: 'Car wash', items: null, createdAt: 5 });
+  });
+});
+
+describe('done and rename', () => {
+  it('records the day a task was finished and clears it when reopened', () => {
+    const done = toggleDone(task(), TODAY);
+    expect(done).toMatchObject({ done: true, doneAt: TODAY });
+    expect(toggleDone(done, TODAY)).toMatchObject({ done: false, doneAt: null });
+  });
+
+  it('ignores an empty name', () => {
+    const t = task({ title: 'Car wash' });
+    expect(rename(t, '   ')).toBe(t);
+    expect(rename(t, ' Oil change ').title).toBe('Oil change');
+  });
+});
+
+describe('checklists', () => {
+  it('finishes the task when the last item is ticked, and reopens it when one is unticked', () => {
+    const t = task({ items: list(true, false) });
+    const finished = toggleItem(t, 1, TODAY);
+    expect(finished).toMatchObject({ done: true, doneAt: TODAY });
+    expect(toggleItem(finished, 0, TODAY)).toMatchObject({ done: false, doneAt: null });
+  });
+
+  it('reopens a finished task when an item is added', () => {
+    const t = task({ items: list(true), done: true, doneAt: TODAY });
+    expect(addItem(t, 'Eggs', TODAY)).toMatchObject({ done: false, items: [...list(true), { text: 'Eggs', done: false }] });
+  });
+
+  it('removes an item when its text is cleared', () => {
+    const t = task({ items: list(false, false) });
+    expect(setItemText(t, 0, '  ', TODAY).items).toEqual([{ text: 'item 1', done: false }]);
+  });
+
+  it('finishes the task when removing the only open item leaves everything ticked', () => {
+    const t = task({ items: list(true, false) });
+    expect(setItemText(t, 1, '', TODAY)).toMatchObject({ done: true, doneAt: TODAY });
+  });
+
+  it('turns back into a single task when the last item is removed', () => {
+    expect(setItemText(task({ items: list(false) }), 0, '', TODAY).items).toBeNull();
+  });
+});
