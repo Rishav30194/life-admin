@@ -26,7 +26,7 @@ Live at `https://rishav30194.github.io/life-admin/` once deployed.
 - **Finishing and deleting:** tick a task or swipe it right to finish it. It stays struck through
   until the end of the day, then disappears. Swipe left to delete, with **Undo**. Bills don't swipe left.
 - **Editing:** tap a task's name to rename it. The arrow on the right opens its due date and
-  checklist. Clear an item's text to remove it.
+  checklist. **Clear** beside the date removes it. Clear an item's text to remove it.
 - **Menu:** monthly bills, collapse or expand all lists, clear a list, and backups.
 - **Panels** (**+**, **Menu**, **Monthly bills**) close with a swipe down, a tap on the dimmed
   area, or **Cancel** or **Done**.
