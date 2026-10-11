@@ -210,6 +210,12 @@ function Details({ task: t, today, onUpdate }: { task: Task; today: ISODate; onU
             }}
           />
         </label>
+        {/* iOS only clears a date field through the picker's Reset, which is easy to miss. */}
+        {t.due && (
+          <button type="button" className="dclear" onClick={() => onUpdate((x) => setDue(x, null))}>
+            Clear
+          </button>
+        )}
       </div>
     </div>
   );
